@@ -14,7 +14,7 @@ FUNC_NODES = {
     "php": {"function_definition", "method_declaration"},
 }
 
-# Extension → Language map
+# Extension Language map
 LANG_MAP = {
     ".c": "c",
     ".cpp": "cpp",
@@ -42,7 +42,7 @@ def extract_functions_from_code(code_bytes: bytes, lang_name: str):
                 func_code = code_bytes[node.start_byte:node.end_byte].decode(errors="ignore")
                 functions.append(func_code)
             except Exception as e:
-                print(f"⚠️ Error decoding function: {e}")
+                print(f"Error decoding function: {e}")
         for child in node.children:
             traverse(child)
 
@@ -62,7 +62,7 @@ def write_functions_to_csv(file_path: str):
         try:
             code_bytes = Path(file_path).read_text(errors="ignore").encode()
         except Exception as e:
-            print(f"⚠️ Error reading {file_path}: {e}")
+            print(f"Error reading {file_path}: {e}")
             return
 
         funcs = extract_functions_from_code(code_bytes, lang)
@@ -105,14 +105,15 @@ def write_functions_to_csv(file_path: str):
                     writer.writerow(r)
             print(f"CSV written/updated: {csv_path}\n")
         except Exception as e:
-            print(f"⚠️ Error writing to CSV {csv_path}: {e}")
+            print(f"Error writing to CSV {csv_path}: {e}")
 
     except Exception as e:
         print(f"Unexpected error in write_functions_to_csv for {file_path}: {e}")
 
 
 if __name__ == "__main__":
-    folder_path = Path(r"D:\Test Data\php")
+    # folder_path = Path(r"D:\Test Data\Python")
+    folder_path = Path(input("Enter the Folder Path: "))
     for file_path in folder_path.glob("*"):
         if file_path.is_file():
             print(f"Processing file: {file_path.name}\n")
