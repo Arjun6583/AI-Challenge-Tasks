@@ -88,5 +88,5 @@ if __name__ == "__main__":
         script_path=r"D:\TextCodeFIleUpload\File Parsing\legacy_script.py" #subprocess which run to detect a file content 
     )
 
-    folder_path = r"D:\TestData\CCPP"
+    folder_path = input("Enter Folder Path: ")
     runner.process_folder(folder_path)
