@@ -1,125 +1,115 @@
+import os
 import csv
-from pathlib import Path
+import pandas as pd
 from tree_sitter_language_pack import get_parser
 
-# Increase CSV cell size
-csv.field_size_limit(10_000_000)
+class FunctionExtractor:
+    FUNC_NODES = {
+        "c": {"function_definition"},
+        "cpp": {"function_definition"},
+        "java": {"method_declaration", "constructor_declaration"},
+        "python": {"function_definition"},
+        "php": {"function_definition", "method_declaration"},
+    }
 
-# Supported function nodes per language
-FUNC_NODES = {
-    "c": {"function_definition"},
-    "cpp": {"function_definition"},
-    "java": {"method_declaration", "constructor_declaration"},
-    "python": {"function_definition"},
-    "php": {"function_definition", "method_declaration"},
-}
+    LANG_MAP = {
+        ".c": "c",
+        ".cpp": "cpp",
+        ".cc": "cpp",
+        ".h": "cpp",
+        ".java": "java",
+        ".py": "python",
+        ".php": "php",
+    }
 
-# Extension Language map
-LANG_MAP = {
-    ".c": "c",
-    ".cpp": "cpp",
-    ".cc": "cpp",
-    ".h": "cpp",
-    ".java": "java",
-    ".py": "python",
-    ".php": "php",
-}
+    def __init__(self, csv_dir):
+        self.csv_dir = csv_dir
+        os.makedirs(self.csv_dir, exist_ok=True)
 
-CSV_FILE_PATH = r"D:\TextCodeFIleUpload\File Parsing\csv_files"
+    def extract_functions_from_code(self, code_bytes, lang_name):
+        """Extract functions from code using Tree-sitter"""
+        parser = get_parser(lang_name)
+        tree = parser.parse(code_bytes)
+        root = tree.root_node
+        functions = []
 
+        def traverse(node):
+            if node.type in self.FUNC_NODES.get(lang_name, {}):
+                try:
+                    func_code = code_bytes[node.start_byte:node.end_byte].decode(errors="ignore")
+                    functions.append(func_code)
+                except Exception as e:
+                    print(f"Error decoding function: {e}")
+            for child in node.children:
+                traverse(child)
 
-def extract_functions_from_code(code_bytes: bytes, lang_name: str):
-    """Parse code with tree-sitter and extract function definitions."""
-    parser = get_parser(lang_name)
-    tree = parser.parse(code_bytes)
-    root = tree.root_node
+        traverse(root)
+        return functions
 
-    functions = []
+    def process_file(self, file_path):
+        """Process a single file and return functions as a dict"""
+        ext = os.path.splitext(file_path)[1].lower()
+        if ext not in self.LANG_MAP:
+            print(f"Skipping unsupported file: {file_path}")
+            return None
 
-    def traverse(node):
-        if node.type in FUNC_NODES.get(lang_name, {}):
-            try:
-                func_code = code_bytes[node.start_byte:node.end_byte].decode(errors="ignore")
-                functions.append(func_code)
-            except Exception as e:
-                print(f"Error decoding function: {e}")
-        for child in node.children:
-            traverse(child)
-
-    traverse(root)
-    return functions
-
-
-def write_functions_to_csv(file_path: str):
-    """Extract functions from a file and append/update them in a CSV."""
-    try:
-        ext = Path(file_path).suffix.lower()
-        if ext not in LANG_MAP:
-            print(f"Skipping unsupported file: {file_path}\n")
-            return
-
-        lang = LANG_MAP[ext]
+        lang = self.LANG_MAP[ext]
         try:
-            code_bytes = Path(file_path).read_text(errors="ignore").encode()
+            with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
+                code_bytes = f.read().encode()
         except Exception as e:
             print(f"Error reading {file_path}: {e}")
-            return
+            return None
+        funcs = self.extract_functions_from_code(code_bytes, lang)
+        if not funcs:
+            return None
 
-        funcs = extract_functions_from_code(code_bytes, lang)
+        # Prepare a dictionary for pandas DataFrame
+        data = {"file_path": file_path}
+        for i, func in enumerate(funcs, start=1):
+            data[f"func{i}"] = func
+        
+        return lang, data
 
-        csv_path = Path(CSV_FILE_PATH) / f"{lang}_functions.csv"
-        file_exists = csv_path.exists()
-
-        rows = [[str(file_path)] + funcs]
-
-        existing_rows = []
-        max_cols = len(funcs)
-
-        if file_exists:
-            try:
-                with open(csv_path, "r", newline="", encoding="utf-8") as f:
-                    reader = csv.reader(f)
-                    header = next(reader, None)
-                    existing_rows = list(reader)
-
-                current_func_cols = len(header) - 1 if header else 0
-                max_cols = max(current_func_cols, len(funcs))
-            except Exception as e:
-                print(f"Error reading existing CSV {csv_path}: {e}")
-
-        headers = ["file_path"] + [f"func{i+1}" for i in range(max_cols)]
-
-        # Normalize rows length
-        for i in range(len(existing_rows)):
-            existing_rows[i] += [""] * (max_cols - (len(existing_rows[i]) - 1))
-        for i in range(len(rows)):
-            rows[i] += [""] * (max_cols - (len(rows[i]) - 1))
-
+    def save_to_csv(self, lang, data):
+        """Save extracted functions to a CSV using pandas""" 
         try:
-            with open(csv_path, "w", newline="", encoding="utf-8") as f:
-                writer = csv.writer(f, quoting=csv.QUOTE_ALL)
-                writer.writerow(headers)
-                for r in existing_rows:
-                    writer.writerow(r)
-                for r in rows:
-                    writer.writerow(r)
-            print(f"CSV written/updated: {csv_path}\n")
-        except Exception as e:
-            print(f"Error writing to CSV {csv_path}: {e}")
+            csv_path = os.path.join(self.csv_dir, f"{lang}_functions.csv")
+            df_new = pd.DataFrame([data])
+            if os.path.exists(csv_path):
+                df_existing = pd.read_csv(csv_path)
+                df_combined = pd.concat([df_existing, df_new], ignore_index=True)
+            else:
+                df_combined = df_new
 
-    except Exception as e:
-        print(f"Unexpected error in write_functions_to_csv for {file_path}: {e}")
+            df_combined.to_csv(csv_path, index=False, quoting=csv.QUOTE_ALL)
+            print(f"CSV written/updated: {csv_path}")
+        except Exception as exception:
+            print("Error to save csv ", exception)
+            return None
+
+    def process_folder(self, folder_path):
+        """Process all files in a folder"""
+        try:
+            total_files = 0
+            for root, _, files in os.walk(folder_path):
+                for file in files:
+                    file_path = os.path.join(root, file)
+                    print(f"Processing file: {file_path}")
+                    result = self.process_file(file_path)
+                    if result:
+                        lang, data = result
+                        self.save_to_csv(lang, data)
+                        total_files += 1
+                        print(f"Processed {total_files} files so far")
+                    print("-" * 50)
+        except Exception as exception:
+            print(f"Error Processing Folder {folder_path}: {exception}")
+            return None
 
 
 if __name__ == "__main__":
-    # folder_path = Path(r"D:\Test Data\Python")
-    folder_path = Path(input("Enter the Folder Path: "))
-    for file_path in folder_path.glob("*"):
-        if file_path.is_file():
-            print(f"Processing file: {file_path.name}\n")
-            try:
-                write_functions_to_csv(str(file_path))
-                print("File functions added into CSV file\n")
-            except Exception as e:
-                print(f"Error processing {file_path.name}: {e}\n")
-            print("-" * 50)
+    folder_path = input("Enter folder path: ")
+    csv_dir = input("Enter CSV output folder path: ")
+    extractor = FunctionExtractor(csv_dir)
+    extractor.process_folder(folder_path)
