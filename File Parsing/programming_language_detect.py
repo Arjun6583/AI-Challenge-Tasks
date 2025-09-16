@@ -1,8 +1,6 @@
 import subprocess
 import tempfile
 from pathlib import Path
-
-
 class GuesslangRunner:
     def __init__(self, python_exe: str, script_path: str):
         """
@@ -87,8 +85,8 @@ class GuesslangRunner:
 if __name__ == "__main__":
     runner = GuesslangRunner(
         python_exe=r"D:\Language Guess\guesslang38\Scripts\python.exe",
-        script_path=r"D:\TextCodeFIleUpload\FileParsing\legacy_script.py" #subprocess which run to detect a file content 
+        script_path=r"D:\TextCodeFIleUpload\File Parsing\legacy_script.py" #subprocess which run to detect a file content 
     )
 
-    folder_path = input("Enter the Folder Path: ")
+    folder_path = r"D:\TestData\CCPP"
     runner.process_folder(folder_path)
