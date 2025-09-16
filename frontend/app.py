@@ -1,22 +1,13 @@
 import streamlit as st
-from frontend.components.upload_form import upload_form
-from frontend.components.chat_display import display_chat
+from components.chat_ui import chat_box
+from components.sidebar_ui import render_sidebar
+from components.input_ui import render_input
 
-USER = "user"
-ASSISTANT = "assistant"
+st.set_page_config(page_title="Chat Upload", page_icon="💬", layout="centered")
 
-st.caption("💬 Chat-style uploader for saving text/code and files.")
+render_sidebar(chat_box)
 
-# --- Initialize messages ---
-if "messages" not in st.session_state:
-    st.session_state.messages = []
+chat_box.init_session()
+chat_box.output_messages()
 
-# --- Display chat history ---
-display_chat(st.session_state.messages)
-
-# --- Show upload form ---
-submitted = upload_form(st.session_state.messages)
-
-# --- Rerun to refresh chat if new submission ---
-if submitted:
-    st.experimental_rerun()
+render_input(chat_box)
