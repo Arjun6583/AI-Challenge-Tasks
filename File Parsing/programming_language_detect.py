@@ -9,7 +9,7 @@ class GuesslangRunner:
         self.python_exe = python_exe
         self.script_path = script_path
 
-    def run(self, input_data: str, input_type: str = "text") -> str | None:
+    def _run(self, input_data: str, input_type: str = "text") -> str | None:
         """
         Run guesslang on given input (either 'text' or 'file').
 
@@ -47,6 +47,7 @@ class GuesslangRunner:
             if result.stderr.strip():
                 print(f"[Error] {result.stderr.strip()}")
                 return None
+            
             return result.stdout.strip()
 
         except Exception as e:
@@ -57,6 +58,7 @@ class GuesslangRunner:
         """
         Process all files in a folder and run guesslang on them.
         """
+        
         folder = Path(folder_path).resolve()
         if not folder.exists():
             raise FileNotFoundError(f"Folder not found: {folder}")

@@ -26,8 +26,12 @@ class FunctionExtractor:
         self.csv_dir = csv_dir
         os.makedirs(self.csv_dir, exist_ok=True)
 
-    def extract_functions_from_code(self, code_bytes, lang_name):
+    def _extract_functions_from_code(self, code_bytes, lang_name):
         """Extract functions from code using Tree-sitter"""
+        
+        if code_bytes == "":
+            return None
+        
         parser = get_parser(lang_name)
         tree = parser.parse(code_bytes)
         root = tree.root_node
@@ -46,36 +50,44 @@ class FunctionExtractor:
         traverse(root)
         return functions
 
-    def process_file(self, file_path):
+    def _process_file(self, file_path):
         """Process a single file and return functions as a dict"""
-        ext = os.path.splitext(file_path)[1].lower()
-        if ext not in self.LANG_MAP:
+        
+        if file_path == "":
+            return None
+        
+        file_extension = os.path.splitext(file_path)[1].lower()
+        if file_extension not in self.LANG_MAP:
             print(f"Skipping unsupported file: {file_path}")
             return None
 
-        lang = self.LANG_MAP[ext]
+        lang = self.LANG_MAP[file_extension]
+        
         try:
             with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
                 code_bytes = f.read().encode()
         except Exception as e:
             print(f"Error reading {file_path}: {e}")
             return None
+        
         funcs = self.extract_functions_from_code(code_bytes, lang)
         if not funcs:
             return None
 
         # Prepare a dictionary for pandas DataFrame
         data = {"file_path": file_path}
+        
         for i, func in enumerate(funcs, start=1):
             data[f"func{i}"] = func
         
         return lang, data
 
-    def save_to_csv(self, lang, data):
+    def _save_to_csv(self, lang, data):
         """Save extracted functions to a CSV using pandas""" 
         try:
             csv_path = os.path.join(self.csv_dir, f"{lang}_functions.csv")
             df_new = pd.DataFrame([data])
+            
             if os.path.exists(csv_path):
                 df_existing = pd.read_csv(csv_path)
                 df_combined = pd.concat([df_existing, df_new], ignore_index=True)
@@ -83,6 +95,7 @@ class FunctionExtractor:
                 df_combined = df_new
 
             df_combined.to_csv(csv_path, index=False, quoting=csv.QUOTE_ALL)
+            
             print(f"CSV written/updated: {csv_path}")
         except Exception as exception:
             print("Error to save csv ", exception)
@@ -90,18 +103,24 @@ class FunctionExtractor:
 
     def process_folder(self, folder_path):
         """Process all files in a folder"""
+        
+        if folder_path == "":
+            return None
+        
         try:
             total_files = 0
-            for root, _, files in os.walk(folder_path):
+            for root, directory, files in os.walk(folder_path):
                 for file in files:
                     file_path = os.path.join(root, file)
                     print(f"Processing file: {file_path}")
+                    
                     result = self.process_file(file_path)
-                    if result:
+                    if result != None:
                         lang, data = result
                         self.save_to_csv(lang, data)
                         total_files += 1
                         print(f"Processed {total_files} files so far")
+                        
                     print("-" * 50)
         except Exception as exception:
             print(f"Error Processing Folder {folder_path}: {exception}")
