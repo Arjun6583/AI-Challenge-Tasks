@@ -1,6 +1,8 @@
-fastapi
-uvicorn
-pymongo
-certifi
-python-multipart
-requests
+fastapi==0.116.2
+uvicorn==0.33.0
+pymongo==4.10.1
+certifi==2025.8.3
+python-multipart==0.0.20
+requests==2.32.4
+python-dotenv==1.0.1
+llm-guard==0.3.16
