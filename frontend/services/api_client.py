@@ -6,11 +6,14 @@ LAST_ANALYSIS = None
 def upload_file(file_name, file_bytes):
     try:
         files = {"file": (file_name, file_bytes)}
-        print("Uploading file:", file_name)
+
         requests.post(f"{BACKEND_URL}/summarize/", data={"text": "File Uploading"})
         response = requests.post(f"{BACKEND_URL}/upload_file/", files=files).json()
+         
         global LAST_ANALYSIS  
-        LAST_ANALYSIS = response["analysis"] if "analysis" in response else None
+        LAST_ANALYSIS = response["analysis"] if "analysis" in response else None 
+        
+        print(response)
         return response
     except Exception as e:
         raise Exception("File upload failed") from e
@@ -19,10 +22,12 @@ def upload_file(file_name, file_bytes):
 def save_text(query: str):
     try:
         requests.post(f"{BACKEND_URL}/summarize/", data={"text": "Text Code Sending"})
-        response = requests.post(f"{BACKEND_URL}/save_text/", data={"text": query}).json() 
-        print("Save text analysis Response:", response["analysis"])
+        
+        response = requests.post(f"{BACKEND_URL}/save_text/", data={"text": query}).json()
         global LAST_ANALYSIS
         LAST_ANALYSIS = response["analysis"] if "analysis" in response else None
+        
+        print(response)
         return response
     except Exception as e:
         raise Exception("Text saving failed") from e
