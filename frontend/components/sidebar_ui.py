@@ -8,14 +8,12 @@ def render_sidebar(chat_box):
             st.subheader("📂 File Upload & Controls")
             uploaded_file = st.file_uploader("Choose any file", key="file_upload")
 
-            # --- Upload File ---
+            #Upload File
             if st.button("⬆️ Upload File"):
                 if not uploaded_file:
                     st.rerun()
                     return
-                print("File Uploaded: ", uploaded_file.name)
                 if uploaded_file:
-                    print("Uploading file:", uploaded_file.name)
                     st.session_state["chat1"] = []
                     resp = upload_file(uploaded_file.name, uploaded_file.getvalue())
                     chat_box.user_say(f"📄 Uploaded file: {uploaded_file.name}")
@@ -28,16 +26,14 @@ def render_sidebar(chat_box):
                 else:
                     st.warning("⚠️ Please select a file to upload.")
 
-            # --- Feedback Section (always visible if we have AI response) ---
+            #Feedback Section (always visible if we have AI response)
             if "last_ai_response" in st.session_state:
-                print("Rendering feedback section")
                 with st.expander("✏️ Provide Correct Response"):
                     corrected = st.text_area(
                         "Enter the correct Response:",
                         key="correct_response_file"
                     )
                     if st.button("Submit Correction", key="submit_correction_btn"):
-                        print("Submitting correction...")
                         if corrected.strip():
                             save_correct_feedback_response(
                                 corrected.strip(),
@@ -50,7 +46,7 @@ def render_sidebar(chat_box):
                             print("Corrected Response:", corrected) 
                             print("AI Response:", st.session_state["last_ai_response"])
 
-            # --- Analysis Button ---
+            #Analysis Button
             if st.button("📊 Analysis"):
                 st.session_state["chat1"] = []
                 print("Getting analysis...")
@@ -59,7 +55,7 @@ def render_sidebar(chat_box):
                     chat_box.ai_say(f"{resp}")
                 st.rerun()
 
-            # --- Clear History Button ---
+            #Clear History Button
             if st.button("🧹 Clear History"):
                 st.session_state["chat1"] = []
                 st.rerun()
