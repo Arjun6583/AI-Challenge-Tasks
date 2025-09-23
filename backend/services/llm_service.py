@@ -1,6 +1,8 @@
-from datetime import datetime
+from datetime import datetime 
+from llm_guard.input_scanners import Code
 import os
 
+llm_guard_code_object = None
 class SimpleLLMService:
     def __init__(self, log_file="llm_service.log"):
         self.summarizer = None
@@ -15,8 +17,10 @@ class SimpleLLMService:
         print("Loading Server...")
 
         self.log_file = open(self.log_file_path, "a", encoding="utf-8")
-
+        global llm_guard_code_object
+        llm_guard_code_object = Code(["C", "C++", "Java", "Python", "PHP", "C#"])
         self.running = True
+        print(llm_guard_code_object)
         print("Server started and ready!")
 
     def summarize(self, text: str):
