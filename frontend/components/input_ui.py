@@ -5,7 +5,7 @@ from utils.formatting import format_query
 def render_input(chat_box):
     try:
         resp = None
-        # --- Handle new chat input ---
+        #Handle new chat input
         if query := st.chat_input("Type your code or Upload File"):
             resp = save_text(query)
             formatted_query = format_query(query)
@@ -19,7 +19,7 @@ def render_input(chat_box):
             st.session_state["last_ai_response"] = ai_response 
             st.session_state["last_file_path"] = resp.get("file_path", "")
 
-        # --- Always render feedback section ---
+        #Always render feedback section
         if "last_ai_response" in st.session_state:
             print("Rendering feedback section")
             with st.expander("✏️ Provide Correct Response"):
